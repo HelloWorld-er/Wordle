@@ -2,19 +2,17 @@ import {useEffect, useState} from "react";
 
 export function useBuiltinKeyboard() {
     const [key, setKey] = useState(null);
-    const [isKeyPressed, setIsKeyPressed] = useState(false);
+    const [isKeyUpdated, setisKeyUpdated] = useState(false);
 
     useEffect(() => {
         const handleKeyDown = (event) => {
             event.preventDefault();
-            if (!isKeyPressed) {
-                setKey(event.key);
-                setIsKeyPressed(true);
-            }
+            setKey(event.key);
+            setisKeyUpdated(true);
         };
 
         const handleKeyUp = () => {
-            setIsKeyPressed(false);
+            setisKeyUpdated(false);
         };
 
         window.addEventListener("keydown", handleKeyDown);
@@ -24,7 +22,7 @@ export function useBuiltinKeyboard() {
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
         };
-    }, [isKeyPressed]);
+    }, []);
 
-    return [ key, isKeyPressed ];
+    return [key, isKeyUpdated];
 }

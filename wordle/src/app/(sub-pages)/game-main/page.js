@@ -99,7 +99,7 @@ function Keyboard() {
 }
 
 function useKeyboard() {
-    const [ builtinKey, isBuiltinKeyPressed ] = useBuiltinKeyboard();
+    const [builtinKey, isBuiltinKeyPressed] = useBuiltinKeyboard();
     const [key, isKeyPressed] = useContext(keyContext);
     const dispatchKey = useContext(keyDispatchContext);
     useEffect(() => {
@@ -137,6 +137,7 @@ export default function GameMain() {
     const [ showPopup, setShowPopup ] = useState(false);
 
     const [ endGame, setEndGame ] = useState(false);
+    const endWindow = useRef(null);
 
     function isLetter(char) {
         return char.length === 1 && char.match(/[a-zA-Z]/i);
@@ -151,10 +152,27 @@ export default function GameMain() {
     }
 
     useEffect(() => {
+        if (dispatchLettersAvailabilityMap) {
+            dispatchLettersAvailabilityMap({
+                type: "reset"
+            });
+        }
+    }, [dispatchLettersAvailabilityMap]);
+
+    useEffect(() => {
         if (currentGameState === GameStates.End) {
             setEndGame(true);
         }
     }, [currentGameState, GameStates]);
+
+    useEffect(() => {
+        if (endGame && endWindow.current) {
+            endWindow.current.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
+        }
+    }, [endGame]);
 
     useEffect(() => {
         const items = Array.from({length: 30}).fill("");
@@ -274,6 +292,15 @@ export default function GameMain() {
         if (currentGameState === GameStates.CheckingFlip) {
             const tl = gsap.timeline({
                 onComplete: () => {
+                    if (dispatchLettersAvailabilityMap && lettersAvailabilityMap) {
+                        for (let i = 0; i < 5; i++) {
+                            dispatchLettersAvailabilityMap({
+                                type: "set",
+                                letter: letters[(guessIndex - 1) * 5 + i],
+                                state: guessLetterStates.current[i],
+                            })
+                        }
+                    }
                     if (guessLetterStates.current.every(item => item === LetterStates.Correct)) {
                         handlePopup("Awesome! You got it!");
                         dispatchCurrentGameState({
@@ -287,20 +314,10 @@ export default function GameMain() {
                             state: GameStates.Guessing
                         });
                     }
-                    if (dispatchLettersAvailabilityMap && lettersAvailabilityMap) {
-                        for (let i = 0; i < 5; i++) {
-                            if (lettersAvailabilityMap.get(letters[(guessIndex - 1) * 5 + i]) === LetterStates.Initial) {
-                                dispatchLettersAvailabilityMap({
-                                    type: "set",
-                                    letter: letters[(guessIndex - 1) * 5 + i],
-                                    state: guessLetterStates.current[i],
-                                })
-                            }
-                        }
-                    }
                 }
             });
             const classes = Array.from({ length: 5 }, (_, i) => ".key-" + ((guessIndex - 1) * 5 + i)).join(", ");
+
             tl.to(classes, {
                 rotateY: "360deg",
                 backgroundColor: (i) => {
@@ -324,10 +341,10 @@ export default function GameMain() {
     }, {dependencies: [currentGameState]});
 
     return (
-        <div className="w-full h-full max-h-full overflow-y-scroll">
+        <div className="w-full h-full max-h-full">
             <div className="relative **:transition-all w-full h-full flex flex-col">
                 <h1>Wordle</h1>
-                <div className="grow flex flex-col place-content-center justify-evenly">
+                <div className="grow flex flex-col place-content-center justify-evenly gap-2">
                     <div className="w-fit h-fit grid grid-cols-5 mx-auto gap-2 place-content-center place-items-stretch font-roboto-mono">
                         {letters && letters.map((item, index) => {
                             return item ? (
@@ -350,22 +367,20 @@ export default function GameMain() {
                     </div>
                 </Show>
             </div>
-            <Show when={endGame}>
-                <div className="w-full h-full flex justify-center items-center">
-                    <div className="shadow-around py-4 px-6 rounded flex flex-col gap-4 justify-evenly items-center">
-                        <div className="text-2xl sm:text-3xl xl:text-4xl font-bold">End</div>
-                        <div className="w-fit h-fit grid grid-cols-5 mx-auto gap-2 place-content-center place-items-stretch font-roboto-mono">
-                            {Array.from({length: 5}).map((item, index) => {
-                                return (
-                                    <div key={index} className={`key-${index} ` + "transition-all box-content aspect-square size-text-sm text-sm/0 sm:size-text-base sm:text-base/0 md:size-text-lg md:text-lg/0 lg:size-text-xl lg:text-xl/0 xl:size-text-2xl xl:text-2xl font-bold p-2 border-2 border-solid border-darker-shadow bg-bright-shadow flex items-center justify-center"}>
-                                        {item}
-                                    </div>
-                                );
-                            })}
-                        </div>
+            <div ref={endWindow} className={(endGame ? "" : "hidden ") + "w-full h-full flex justify-center items-center"}>
+                <div className="shadow-around py-4 px-6 rounded flex flex-col gap-4 justify-evenly items-center">
+                    <div className="text-2xl sm:text-3xl xl:text-4xl font-bold">End</div>
+                    <div className="w-fit h-fit grid grid-cols-5 mx-auto gap-2 place-content-center place-items-stretch font-roboto-mono">
+                        {Array.from({length: 5}).map((item, index) => {
+                            return (
+                                <div key={index} className={`answer-key-${index} ` + "transition-all box-content aspect-square size-text-sm text-sm/0 sm:size-text-base sm:text-base/0 md:size-text-lg md:text-lg/0 lg:size-text-xl lg:text-xl/0 xl:size-text-2xl xl:text-2xl font-bold p-2 border-2 border-solid border-darker-shadow bg-bright-shadow flex items-center justify-center"}>
+                                    {item}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-            </Show>
+            </div>
         </div>
     )
 }

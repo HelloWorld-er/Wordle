@@ -1,6 +1,7 @@
 'use client';
 
-import {createContext, useReducer, useRef, useState} from "react";
+import {createContext, useEffect, useReducer, useRef, useState} from "react";
+import {fetchARandomWord as fetchARandomWordFromSever, checkIfAWordValid as checkIfAWordValidFromServer} from "@/utils/handleWordList";
 
 const GameStates = Object.freeze({
     Initial: 0,
@@ -29,6 +30,7 @@ export const WordleGameStateContext = createContext(null);
 
 export default function WordleInfoContextProvider({children}) {
     const [wordleWord, setWordleWord] = useState("");
+    const [wordleWordLettersCountMap, setWordleWordLettersCountMap] = useState(new Map());
     const currentGameStateIndex = useRef(0);
     const [currentGameState, dispatchCurrentGameState] = useReducer((currentGameState, action) => {
         switch (action.type) {
@@ -49,38 +51,45 @@ export default function WordleInfoContextProvider({children}) {
         }
     }, GameStates.Initial, undefined);
 
-    async function searchAWordInDictionary(word) {
-        let fetched = false;
-        while (!fetched) {
-            try {
-                const response = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + word);
-                fetched = true;
-                return response.ok; // Returns true for 200 and other successful responses
-            } catch (error) {
-                console.error("fail to fetch word from dictionary: ", error);
+    useEffect(() => {
+        const newWordleWordLettersCountMap = new Map();
+        for (let letter of wordleWord) {
+            if (newWordleWordLettersCountMap.has(letter)) {
+                newWordleWordLettersCountMap.set(letter, newWordleWordLettersCountMap.get(letter) + 1);
+            } else {
+                newWordleWordLettersCountMap.set(letter, 1);
             }
+        }
+        setWordleWordLettersCountMap(newWordleWordLettersCountMap);
+    }, [wordleWord]);
+
+    async function searchAWordInDictionary(word) {
+        const [ok, body] = await checkIfAWordValidFromServer(word); // server-side function
+        if (ok) {
+            // body = (if the word is included)
+            return body;
+        } else {
+            console.error("fail to fetch word from dictionary: ", body);
+            return null;
         }
     }
 
-    async function fetchWordleWord(lang = "", length = 5) {
-        while (true) {
-            const responseFromRandom = await fetch("https://random-word-api.herokuapp.com/word?length=" + length + (lang && lang !== "en" ? "&lang=" + lang : ""));
-            if (!responseFromRandom.ok) {
-                throw new Error("Failed to fetch wordle word");
-            }
-            const wordFromRandom = (await responseFromRandom.json())[0];
-            if (await searchAWordInDictionary(wordFromRandom)) {
-                return wordFromRandom.toLowerCase();
-            }
+    async function fetchWordleWord() {
+        const [ok, body] = await fetchARandomWordFromSever(); // server-side function
+        if (ok) {
+            // newWordleWord = body
+            return body;
+        } else {
+            console.error("fail to fetch a word from wordList: ", body);
+            return "";
         }
     }
 
     async function generateAWord() {
-        let fetched = false;
-        while (!fetched) {
+        while (true) {
             try {
                 setWordleWord(await fetchWordleWord());
-                fetched = true;
+                break;
             } catch (error) {
                 console.error("Error generating a word:", error);
             }
@@ -96,12 +105,16 @@ export default function WordleInfoContextProvider({children}) {
         if (!ifValidWord) {
             return {status: false, content: "It is not in the word list."};
         }
+        const lettersCountMap = new Map(wordleWordLettersCountMap);
         const result = word.split('').map((char, index) => {
-            if (char === wordleWord[index]) {
-                return LetterStates.Correct;
-            }
-            if (wordleWord.includes(char)) {
-                return LetterStates.Present;
+            if (lettersCountMap.has(char) && lettersCountMap.get(char)) {
+                lettersCountMap.set(char, lettersCountMap.get(char) - 1);
+                if (char === wordleWord[index]) {
+                    return LetterStates.Correct;
+                }
+                if (wordleWord.includes(char)) {
+                    return LetterStates.Present;
+                }
             }
             return LetterStates.Absent;
         });
@@ -130,12 +143,14 @@ export default function WordleInfoContextProvider({children}) {
             }
             case "set": {
                 const newLettersAvailabilityMap = new Map(lettersAvailabilityMap);
-                newLettersAvailabilityMap.set(action.letter, action.state);
-                dispatchLettersAvailabilityBuffer({
-                    type: "add",
-                    letter: action.letter,
-                    state: action.state,
-                });
+                if (newLettersAvailabilityMap.has(action.letter) && newLettersAvailabilityMap.get(action.letter) === LetterStates.Initial) {
+                    newLettersAvailabilityMap.set(action.letter, action.state);
+                    dispatchLettersAvailabilityBuffer({
+                        type: "add",
+                        letter: action.letter,
+                        state: action.state,
+                    });
+                }
                 return newLettersAvailabilityMap;
             }
         }
