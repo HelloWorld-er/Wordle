@@ -1,6 +1,6 @@
 'use client';
 
-import {createContext, useEffect, useReducer, useState} from "react";
+import {createContext, useReducer, useState} from "react";
 
 export const keyContext = createContext(null);
 export const keyDispatchContext = createContext(null);
@@ -10,18 +10,19 @@ export default function KeyboardContextProvider({children}) {
 
     const [key, dispatchKey] = useReducer((key, action) => {
         switch (action.type) {
-            case "update": {
-                setIsKeyPressed(true);
-                return action.key;
+            case "set": {
+                if (!isKeyPressed) {
+                    setIsKeyPressed(true);
+                    return action.key;
+                }
+                return key;
+            }
+            case "clear": {
+                setIsKeyPressed(false);
+                return "";
             }
         }
     }, "", undefined);
-
-    useEffect(() => {
-        if (isKeyPressed) {
-            setIsKeyPressed(false);
-        }
-    }, [isKeyPressed]);
 
     return (
         <keyContext.Provider value={[key, isKeyPressed]}>

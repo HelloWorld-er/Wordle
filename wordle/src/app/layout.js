@@ -1,7 +1,7 @@
 import { Roboto, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import KeyboardContextProvider from "@/context/KeyboardContext";
-import WordleInfoContextProvider from "@/context/WordleInfoContext";
+import {CacheContextProvider} from "@/context/CacheContext";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -24,11 +24,11 @@ export default function RootLayout({ children }) {
       <body
         className={`${roboto.variable} ${robotoMono.variable} antialiased font-roboto bg-background text-foreground`}
       >
-          <KeyboardContextProvider>
-              <WordleInfoContextProvider>
+          <CacheContextProvider>
+              <KeyboardContextProvider>
                   {children}
-              </WordleInfoContextProvider>
-          </KeyboardContextProvider>
+              </KeyboardContextProvider>
+          </CacheContextProvider>
       </body>
     </html>
   );

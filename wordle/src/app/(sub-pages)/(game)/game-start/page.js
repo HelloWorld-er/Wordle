@@ -2,22 +2,30 @@
 
 import Show from "@/components/Show";
 import Typist from "modern-react-typist";
-import {useContext, useEffect, useState} from "react";
-import {WordleGameStateContext, WordleWordDispatchContext} from "@/context/WordleInfoContext";
+import {useContext, useEffect, useRef, useState} from "react";
+import {WordleGameStateContext, WordleWordDispatchContext} from "@/context/WordleContext";
 import Link from "next/link";
 
 export default function GameStart() {
-    const [currentGameState, dispatchCurrentGameState, GameStates] = useContext(WordleGameStateContext);
+    const [currentGameState, dispatchCurrentGameState, GameStates, isFirstRender] = useContext(WordleGameStateContext);
     const generateNewWord = useContext(WordleWordDispatchContext);
+
+    const ifReset = useRef(false);
 
     const [showPopup, setShowPopup] = useState(false);
     const [popupContent, setPopupContent] = useState("");
 
     useEffect(() => {
-        dispatchCurrentGameState({
-            type: "reset",
-        });
-    }, [dispatchCurrentGameState])
+        if (!isFirstRender && !ifReset.current) {
+            if (currentGameState !== GameStates.Initial && currentGameState !== GameStates.Generated) {
+                console.log("Game state changed to reset");
+                dispatchCurrentGameState({
+                    type: "reset",
+                });
+            }
+            ifReset.current = true;
+        }
+    }, [isFirstRender, currentGameState, dispatchCurrentGameState, GameStates])
 
     async function generateAWord() {
         if (generateNewWord) {
@@ -42,7 +50,7 @@ export default function GameStart() {
                       href="/game-main">
                     Open the panel to try
                 </Link>
-                <button className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto"
+                <button className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
                         onClick={async () => {
                             await generateAWord();
                             dispatchCurrentGameState({
