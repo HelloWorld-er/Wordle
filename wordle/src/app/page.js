@@ -12,21 +12,26 @@ export default function Home() {
             <Typist cursor={<span className="animate-pulse mx-2">|</span>} delay={50}>
               <div className="tracking-tight text-sm sm:text-base flex flex-col items-center text-center sm:text-left sm:items-start">
                 <p>Wordle is a web-based word game created and developed by the Welsh software engineer Josh Wardle.</p>
-                <p>This is an extended version of classic Wordle game.</p>
               </div>
             </Typist>
             <div className="flex gap-4 items-center flex-col sm:flex-row">
               <Link
-                  className="w-fit rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+                  className="w-fit rounded-3xl border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-center font-medium text-sm px-4 py-2 sm:text-base sm:px-5 sm:w-auto"
                   href="/game-start"
               >
                 Start to Play
               </Link>
               <Link
-                  className="w-fit rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+                  className="w-fit rounded-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-center font-medium text-sm px-4 py-2 sm:text-base sm:px-5 sm:w-auto"
                   href="/game-intro"
               >
                 Read more about Wordle
+              </Link>
+              <Link
+                  className="w-fit rounded-3xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-center font-medium text-sm px-4 py-2 sm:text-base sm:px-5 sm:w-auto"
+                  href="/app-intro"
+              >
+                Read more about this app
               </Link>
             </div>
           </main>

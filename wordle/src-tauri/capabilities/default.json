@@ -6,9 +6,6 @@
     "main"
   ],
   "permissions": [
-    "core:default",
-    "store:default",
-    "core:window:allow-close",
-    "core:window:allow-destroy"
+    "core:default"
   ]
 }

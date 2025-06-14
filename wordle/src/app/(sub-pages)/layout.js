@@ -11,7 +11,7 @@ export default function Layout({children}) {
         <div className="w-screen h-screen px-2 py-2 md:px-6 md:py-8 lg:px-14 grid grid-rows-[auto_1fr] gap-2">
             <button className="cursor-pointer place-self-start text-xl sm:text-2xl"
                   onClick={() => {
-                      if (pathname === "/game-start" || pathname === "/game-intro") {
+                      if (pathname === "/game-start" || pathname === "/game-intro" || pathname === "/app-intro") {
                           router.push("/");
                       } else if (pathname === "/game-main") {
                           router.push("/game-start");

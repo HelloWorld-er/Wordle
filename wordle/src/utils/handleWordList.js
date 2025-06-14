@@ -1,11 +1,18 @@
-'use server';
+let wordList = []; // Store globally
 
-import fs from 'fs/promises';
-
-const data = await fs.readFile(process.cwd() + '/src/data/wordList.json', 'utf-8');
-const wordList = JSON.parse(data);
+async function fetchWordListOnce() {
+    if (wordList.length === 0) {
+        const wordListResponse = await fetch("/wordList.json");
+        if (!wordListResponse.ok) {
+            throw new Error("Failed to fetch word list");
+        }
+        wordList = await wordListResponse.json();
+        console.log("Word List Loaded:", wordList);
+    }
+}
 
 export async function fetchARandomWord() {
+    await fetchWordListOnce();
     try {
         return [true, wordList[Math.floor(Math.random() * wordList.length)]];
     } catch (error) {
@@ -14,6 +21,7 @@ export async function fetchARandomWord() {
 }
 
 export async function checkIfAWordValid(word){
+    await fetchWordListOnce();
     try {
         return [true, wordList.includes(word)];
     } catch (error) {

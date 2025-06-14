@@ -20,30 +20,31 @@ export default function LettersFalling({className, style, positionClass = "relat
         const newLetters = Array.from({length: numberOfLetters}, () => {
             return {
                 letter: letters[Math.floor(Math.random() * letters.length)],
-                leftExpression: `calc(${Math.random()} * 100%)`,
-                className: "select-none " + animateItemClassName,
+                className: animateItemClassName,
             };
         });
         setGeneratedLetters(newLetters);
     }
 
     useEffect(() => {
-        generateNewLetters(numberOfAnimateItem);
-        setIsItemsCreated(true);
-    }, []);
+        if (!isItemsCreated) {
+            console.log("generate new letters");
+            generateNewLetters(numberOfAnimateItem);
+            setIsItemsCreated(true);
+        }
+    }, [isItemsCreated]);
 
     useGSAP(() => {
         if (isItemsCreated) {
-            const tl = gsap.timeline({
-                onComplete: () => {
-                    generateNewLetters(numberOfAnimateItem);
-                },
-                repeat: -1,
-            });
+            console.log("start animation");
+            const tl = gsap.timeline({});
 
-            tl.fromTo("." + animateItemClassName, {
+            tl.set(animationContainer.current.children, {
+                clearProps: "all",
+            }).set(animationContainer.current.children, {
                 top: "-10%",
-            }, {
+                left: () => Math.random() * 100 + "%",
+            }).to(animationContainer.current.children, {
                 top: "100%",
                 rotate: () => Math.random() > 0.5 ? 360 * Math.random() : -360 * Math.random(),
                 duration: 3,
@@ -53,18 +54,19 @@ export default function LettersFalling({className, style, positionClass = "relat
                     velocity: 100,
                     angle: 90,
                     gravity: 200,
-                }
+                },
+                onComplete: () => {
+                    setIsItemsCreated(false);
+                },
             });
         }
-    }, {dependencies: [generatedLetters], scope: animationContainer});
+    }, {dependencies: [isItemsCreated], scope: animationContainer});
 
     return (
         <div ref={animationContainer} className={"w-full h-full overflow-hidden" + " " + className + " " + positionClass} style={style}>
             {generatedLetters.map((item, index) => {
                 return (
-                    <span key={index} className={"absolute" + " " + item.className} style={{
-                        left: item.leftExpression,
-                    }}>
+                    <span key={index} className={"absolute select-none" + " " + item.className}>
                         {item.letter}
                     </span>
                 );

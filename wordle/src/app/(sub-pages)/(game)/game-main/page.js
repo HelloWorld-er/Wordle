@@ -72,7 +72,7 @@ function Keyboard() {
                 {
                     keys[0].map((item, index) => {
                         return (
-                            <button key={index} className={`keyboard-key-${item} ` + "cursor-pointer flex items-center justify-center p-2 rounded-sm bg-darker-shadow"}
+                            <button key={index} className={`keyboard-key-${item} ` + "cursor-pointer flex items-center justify-center text-sm/0 px-1 py-4 sm:text-base/0 sm:px-2 sm:py-5 rounded-sm bg-darker-shadow"}
                                     onClick={(event) => handleKeyClick(event)}>{item}</button>
                         )
                     })
@@ -82,7 +82,7 @@ function Keyboard() {
                 {
                     keys[1].map((item, index) => {
                         return (
-                            <button key={index} className={`keyboard-key-${item} ` + "cursor-pointer flex items-center justify-center p-2 rounded-sm bg-darker-shadow"}
+                            <button key={index} className={`keyboard-key-${item} ` + "cursor-pointer flex items-center justify-center text-sm/0 px-1 py-4 sm:text-base/0 sm:px-2 sm:py-5 rounded-sm bg-darker-shadow"}
                                     onClick={(event) => handleKeyClick(event)}>{item}</button>
                         )
                     })
@@ -92,7 +92,7 @@ function Keyboard() {
                 {
                     keys[2].map((item, index) => {
                         return (
-                            <button key={index} className={(item === "ENTER" || item === "DEL" ? "text-sm " : "") + `keyboard-key-${item} ` + "cursor-pointer flex items-center justify-center p-2 rounded-sm bg-darker-shadow"}
+                            <button key={index} className={(item === "ENTER" || item === "DEL" ? "text-xs/0 px-1 py-4 sm:text-sm/0 sm:px-2 sm:py-5" : "text-sm/0 px-1 py-4 sm:text-base/0 sm:px-2 sm:py-5") + " " + `keyboard-key-${item} ` + "cursor-pointer flex items-center justify-center rounded-sm bg-darker-shadow"}
                                     onClick={(event) => handleKeyClick(event)}>{item}</button>
                         )
                     })
@@ -121,16 +121,19 @@ function useKeyboard() {
 export default function GameMain() {
     const [isFirstRender, setIsFirstRender] = useState(true);
 
+    const guessLettersContainer = useRef(null);
+
+    const [errors, setErrors] = useState([]);
+    const [ifGameError, setIfGameError] = useState(false);
+
     const generatedWord = useContext(WordleWordContext);
     const checkIfWordValidAndCompare = useContext(WordleWordCheckContext);
     const [guessedLetterStates, dispatchGuessedLetterStates, LetterStates] = useContext(WordleLetterStatesContext);
 
-    const [currentGameState, dispatchCurrentGameState, GameStates] = useContext(WordleGameStateContext);
+    const [currentGameState, dispatchCurrentGameState, GameStates, isInitializingGame] = useContext(WordleGameStateContext);
     const [, dispatchLettersAvailabilityMap] = useContext(WordleLettersAvailabilityMapContext);
     const [updatedLettersBuffer, dispatchUpdatedLettersBuffer] = useContext(WordleExistedLettersBufferContext);
-    const isStateChanged = useRef(false);
 
-    const [guessWord, setGuessWord] = useState("");
     const [key, isKeyPressed, dispatchKey] = useKeyboard();
     const [ifInput, setIfInput] = useState(false);
 
@@ -178,10 +181,25 @@ export default function GameMain() {
     }
 
     useEffect(() => {
-        if (currentGameState === GameStates.End) {
+        return () => {
+            setErrors([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isInitializingGame && (!generatedWord || generatedWord === "" || generatedWord.length !== 5)) {
+            setIfGameError(true);
+            setErrors(prevState => {
+                return [...prevState, "The word is not generated properly!"];
+            });
+        }
+    }, [isInitializingGame, generatedWord]);
+
+    useEffect(() => {
+        if (currentGameState === GameStates.End && !isFirstRender) {
             setEndGame(true);
         }
-    }, [currentGameState, GameStates]);
+    }, [currentGameState, GameStates, isFirstRender]);
 
     useEffect(() => {
         if (endGame && endWindow.current) {
@@ -194,11 +212,12 @@ export default function GameMain() {
 
     useGSAP(() => {
         if (endGame) {
+            console.log("endGame");
             const tl = gsap.timeline();
             const classesForLastGuess = Array.from({length: 5}, (_, i) => `.last-guess-letter-key-${i}`);
             const classesForAnswer = Array.from({length: 5}, (_, i) => `.answer-letter-key-${i}`);
             tl.to([...classesForLastGuess, ...classesForAnswer], {
-                rotateY: "360deg",
+                rotateY: 360,
                 backgroundColor: (i, element) => {
                     const letterKeyInfo = getKeyByClass(element, ["last-guess-letter-key-", "answer-letter-key-"], [...classesForLastGuess, ...classesForAnswer]);
                     if (!letterKeyInfo.foundKey) {
@@ -225,7 +244,6 @@ export default function GameMain() {
                     }
                     if (letterKeyInfo.keyClassPrefix === "last-guess-letter-key-") {
                         const letterKey = letterKeyInfo.key;
-                        // const letterState = guessLetterStates.current[letterKey];
                         const letterState = guessedLetterStates[guessIndex * 5 + letterKey].state;
                         if (letterState === LetterStates.Correct) return "#6aaa64";
                         if (letterState === LetterStates.Present) return "#c9b458";
@@ -239,7 +257,7 @@ export default function GameMain() {
                 stagger: 0.2,
             });
         }
-    }, {dependencies: [endGame]});
+    }, {dependencies: [endGame], scope: endWindow});
 
     useEffect(() => {
         if (currentGameState < GameStates.Guessing && dispatchGuessedLetterStates) {
@@ -266,7 +284,7 @@ export default function GameMain() {
         async function handleKeyPress() {
             if (!checkIfWordValidAndCompare || !key || !guessedLetterStates) return;
             if (!ifInput) return;
-            if (currentGameState !== GameStates.Guessing) return;
+            if (currentGameState !== GameStates.Guessing && currentGameState !== GameStates.MicroCheck) return;
             dispatchCurrentGameState({
                 type: "set",
                 state: GameStates.MicroCheck,
@@ -275,11 +293,6 @@ export default function GameMain() {
 
             if (guessIndex < 6) {
                 if (isLetter(key) && cursorIndex < 5) {
-                    if (guessedLetterStates[guessIndex * 5 + cursorIndex] && guessedLetterStates[guessIndex * 5 + cursorIndex].letter) {
-                        setGuessWord(prev => prev.slice(0, prev.length - 1) + key.toLowerCase());
-                    } else {
-                        setGuessWord(prev => prev + key.toLowerCase());
-                    }
                     dispatchGuessedLetterStates({
                         type: "setLetter",
                         index: guessIndex * 5 + cursorIndex,
@@ -291,11 +304,12 @@ export default function GameMain() {
                 }
                 else if (key === "Enter") {
                     ifEnter = true;
-                    console.log(guessWord, generatedWord);
                     dispatchCurrentGameState({
                         type: "set",
                         state: GameStates.CheckingStart
                     });
+                    const guessWord = guessedLetterStates.slice(guessIndex * 5, guessIndex * 5 + 5).map(item => item.letter.toLowerCase()).join("");
+                    console.log(guessWord, generatedWord);
                     const {status, content} = await checkIfWordValidAndCompare(guessWord);
                     if (!status && typeof content === "string") {
                         dispatchCurrentGameState({
@@ -316,7 +330,6 @@ export default function GameMain() {
                     }
                 }
                 else if (key === "Backspace"){
-                    setGuessWord(prev => prev.slice(0, prev.length - 1));
                     if (cursorIndex >= 0 && guessedLetterStates[guessIndex * 5 + cursorIndex].letter) {
                         dispatchGuessedLetterStates({
                             type: "remove",
@@ -345,7 +358,7 @@ export default function GameMain() {
             }
         }
         handleKeyPress().then(() => {}).catch(() => {});
-    }, [ifInput, currentGameState, dispatchCurrentGameState, GameStates, guessWord, generatedWord, checkIfWordValidAndCompare, key, dispatchKey, cursorIndex, setCursorIndex, guessIndex, guessedLetterStates, dispatchGuessedLetterStates]);
+    }, [ifInput, currentGameState, dispatchCurrentGameState, GameStates, generatedWord, checkIfWordValidAndCompare, key, dispatchKey, cursorIndex, setCursorIndex, guessIndex, guessedLetterStates, dispatchGuessedLetterStates]);
 
     useGSAP(() => {
         if (currentGameState === GameStates.CheckingUnrecognized) {
@@ -372,18 +385,76 @@ export default function GameMain() {
                 duration: 0.1,
             });
         }
-    }, {dependencies: [currentGameState]});
+    }, {dependencies: [currentGameState], scope: guessLettersContainer});
 
     useGSAP(() => {
-        if (updatedLettersBuffer && updatedLettersBuffer.size) {
+        if (!isInitializingGame && updatedLettersBuffer && updatedLettersBuffer.size && guessedLetterStates) {
+            const tl = gsap.timeline();
+            let classes = [];
+            updatedLettersBuffer.forEach(({letter, actions}, key) => {
+                if (actions.includes("setLetter") || actions.includes("remove")) {
+                    classes.push(".guess-letter-key-" + key);
+                }
+            });
+            console.log("gsap: ", classes, updatedLettersBuffer);
+
+            tl.to(classes, {
+                onStart: function () {
+                    this.targets().forEach(element => {
+                        const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
+                        if (!letterKeyInfo.foundKey) {
+                            console.error("No letter key found!");
+                            return;
+                        }
+                        if (updatedLettersBuffer.has(letterKeyInfo.key)) {
+                            const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
+                            if (actions.includes("setLetter")) {
+                                element.classList.remove("border-darker-shadow");
+                                element.classList.add("border-darkest-shadow");
+                            } else if (actions.includes("remove")) {
+                                element.classList.remove("border-darkest-shadow");
+                                element.classList.add("border-darker-shadow");
+                            }
+                        }
+                    })
+                },
+                scale: (i, element) => {
+                    const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
+                    if (!letterKeyInfo.foundKey) {
+                        console.error("No letter key found!");
+                        return;
+                    }
+                    if (updatedLettersBuffer.has(letterKeyInfo.key)){
+                        const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
+                        if (!actions.includes("setState") && actions.includes("setLetter")) {
+                            return 1.2;
+                        }
+                    }
+                },
+                rotateY: 0,
+                ease: "power1.out",
+                duration: 0.15,
+            }).to(classes, {
+                scale: 1,
+                rotateY: 0,
+                ease: "power3.out",
+                duration: 0.05
+            })
+            console.log("updateKeys:", updatedLettersBuffer.keys());
+
+            dispatchUpdatedLettersBuffer({
+                type: "clearActions",
+                actions: ["remove", "setLetter"]
+            });
+        }
+    }, {dependencies: [updatedLettersBuffer, isInitializingGame, isFirstRender, guessedLetterStates], scope: guessLettersContainer})
+
+    useGSAP(() => {
+        if (!isInitializingGame && updatedLettersBuffer && updatedLettersBuffer.size && guessedLetterStates) {
+            let ifStateChanged = false;
             const tl = gsap.timeline({
                 onComplete: () => {
-                    if (isStateChanged.current) {
-                        isStateChanged.current = false;
-                        dispatchCurrentGameState({
-                            type: "set",
-                            state: GameStates.Guessing
-                        });
+                    if (ifStateChanged) {
                         if (dispatchLettersAvailabilityMap) {
                             for (let i = 0; i < 5; i++) {
                                 dispatchLettersAvailabilityMap({
@@ -393,13 +464,14 @@ export default function GameMain() {
                                 })
                             }
                         }
+
+                        console.log("isFirstRender: ", isFirstRender, "guessIndex: ", guessIndex, "guessedLetterStates.length: ", guessedLetterStates.length);
+                        console.log(guessedLetterStates);
+
                         if (isFirstRender) {
                             // check if the guessIndex should increment
-                            // currentGameState === GameStates.CheckingFlip
-                            console.log("isFirstRender: ", isFirstRender, "guessIndex: ", guessIndex, "guessedLetterStates.length: ", guessedLetterStates.length);
-                            console.log(guessedLetterStates);
                             if (guessIndex * 5 + 4 < guessedLetterStates.length && guessedLetterStates[guessIndex * 5 + 4].state !== LetterStates.Initial) {
-                                if (guessIndex + 1 >= 6) {
+                                if (guessedLetterStates.slice(guessIndex * 5, guessIndex * 5 + 5).every(item => item.state === LetterStates.Correct) || guessIndex >= 5) {
                                     dispatchCurrentGameState({
                                         type: "set",
                                         state: GameStates.End
@@ -409,9 +481,17 @@ export default function GameMain() {
                                         type: "set",
                                         state: GameStates.Guessing
                                     });
+                                    setGuessIndex(prevState => prevState + 1);
+                                    setCursorIndex(0);
                                 }
-                                setGuessIndex(prevState => prevState + 1);
-                                setCursorIndex(0);
+                            } else if (guessIndex * 5 + 4 < guessedLetterStates.length && guessedLetterStates[guessIndex * 5 + 4].state === LetterStates.Initial) {
+                                if (guessIndex - 1 >= 0 && guessedLetterStates.slice((guessIndex - 1) * 5, (guessIndex - 1) * 5 + 5).every(item => item.state === LetterStates.Correct)) {
+                                    setGuessIndex(prevState => prevState - 1);
+                                    dispatchCurrentGameState({
+                                        type: "set",
+                                        state: GameStates.End
+                                    });
+                                }
                             }
                         } else {
                             if (guessedLetterStates.slice(guessIndex * 5, guessIndex * 5 + 5).every(item => item.state === LetterStates.Correct) || guessIndex >= 5) {
@@ -421,7 +501,6 @@ export default function GameMain() {
                                     state: GameStates.End
                                 });
                             } else {
-                                setGuessWord("");
                                 setGuessIndex(prevState => prevState + 1);
                                 setCursorIndex(0);
                                 handlePopup("Try again!");
@@ -439,87 +518,16 @@ export default function GameMain() {
             });
             let classes = [];
             updatedLettersBuffer.forEach(({letter, actions}, key) => {
-                classes.push(".guess-letter-key-" + key);
+                if (actions.includes("setState")) {
+                    classes.push(".guess-letter-key-" + key);
+                }
             });
-            console.log("gsap: ", classes, updatedLettersBuffer);
-            tl.to(classes.join(", "), {
-                onStart: function () {
-                    this.targets().forEach(element => {
-                        const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-                        if (!letterKeyInfo.foundKey) {
-                            console.error("No letter key found!");
-                            return;
-                        }
-                        // dealing with entering a letter / removing a letter + if update states
-                        if (updatedLettersBuffer.has(letterKeyInfo.key)) {
-                            const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
-                            if (actions.includes("setLetter")) {
-                                element.classList.remove("border-darker-shadow");
-                                element.classList.add("border-darkest-shadow");
-                            }
-                            if (actions.includes("remove")) {
-                                element.classList.remove("border-darkest-shadow");
-                                element.classList.add("border-darker-shadow");
-                            }
-                        }
-                    })
-                },
-                scale: (i, element) => {
-                    // for entering letter
-                    const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-                    if (!letterKeyInfo.foundKey) {
-                        console.error("No letter key found!");
-                        return;
-                    }
-                    if (updatedLettersBuffer.has(letterKeyInfo.key)){
-                        const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
-                        if (actions.includes("setLetter")) {
-                            return 1.2;
-                        }
-                    }
-                },
-                ease: "power1.out",
-                duration: 0.15
-            }, 0).to(classes.join(", "), {
-                scale: 1,
-                ease: "power3.out",
-                duration: 0.05,
-            });
-
-            tl.to(classes.join(", "), {
-                onStart: function () {
-                    this.targets().forEach(element => {
-                        const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-                        if (!letterKeyInfo.foundKey) {
-                            console.error("No letter key found!");
-                            return;
-                        }
-                        // dealing with entering a letter / removing a letter + if update states
-                        if (updatedLettersBuffer.has(letterKeyInfo.key)) {
-                            const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
-                            if (actions.includes("setState")) {
-                                isStateChanged.current = true
-                            }
-                        }
-                    })
-                },
-                rotateY: (i, element) => {
-                    // for state updates
-                    const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-                    if (!letterKeyInfo.foundKey) {
-                        console.error("No letter key found!");
-                        return;
-                    }
-                    if (updatedLettersBuffer.has(letterKeyInfo.key)) {
-                        const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
-                        console.log(letterKeyInfo.key, actions);
-                        if (actions.includes("setState")) {
-                            return "360deg";
-                        }
-                    }
-                },
+            if (classes.length) {
+                ifStateChanged = true;
+            }
+            tl.to(classes, {
+                rotateY: 360,
                 backgroundColor: (i, element) => {
-                    // for state updates
                     const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
                     if (!letterKeyInfo.foundKey) {
                         console.error("No letter key found!");
@@ -533,7 +541,6 @@ export default function GameMain() {
                     }
                 },
                 borderColor: (i, element) => {
-                    // for state updates
                     const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
                     if (!letterKeyInfo.foundKey) {
                         console.error("No letter key found!");
@@ -546,107 +553,25 @@ export default function GameMain() {
                         if (letterState === LetterStates.Absent) return "#787c7e";
                     }
                 },
-                color: (i, element) => {
-                    // for state updates
-                    const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-                    if (!letterKeyInfo.foundKey) {
-                        console.error("No letter key found!");
-                        return;
-                    }
-                    if (updatedLettersBuffer.has(letterKeyInfo.key)) {
-                        const actions = updatedLettersBuffer.get(letterKeyInfo.key).actions;
-                        if (actions.includes("setState")) return "#ffffff";
-                    }
-                },
+                color: "#ffffff",
                 ease: "power3.inOut",
                 duration: 0.5,
                 stagger: 0.2,
-            }, 0);
+            });
 
             dispatchUpdatedLettersBuffer({
-                type: "clear",
+                type: "clearActions",
+                actions: ["setState"]
             });
         }
-    }, {dependencies: [updatedLettersBuffer]})
-
-    // useGSAP(() => {
-    //     if (!guessedLetterStates || !guessedLetterStates.length || !dispatchLettersAvailabilityMap || guessIndex === null || guessIndex === undefined) return;
-    //     if (!isInitializingGame && (currentGameState === GameStates.CheckingFlip || isFirstRender)) {
-    //         const tl = gsap.timeline({
-    //             onComplete: () => {
-    //                 if (dispatchLettersAvailabilityMap) {
-    //                     for (let i = 0; i < 5; i++) {
-    //                         dispatchLettersAvailabilityMap({
-    //                             type: "set",
-    //                             letter: guessedLetterStates[guessIndex * 5 + i].letter,
-    //                             state: guessedLetterStates[guessIndex * 5 + i].state
-    //                         })
-    //                     }
-    //                 }
-    //                 if (isFirstRender) {
-    //                     setIsFirstRender(false);
-    //                 } else if (guessedLetterStates.slice(guessIndex * 5, guessIndex * 5 + 5).every(item => item.state === LetterStates.Correct) || guessIndex >= 5) {
-    //                     handlePopup("Awesome! You got it!");
-    //                     dispatchCurrentGameState({
-    //                         type: "set",
-    //                         state: GameStates.End
-    //                     });
-    //                 } else {
-    //                     setGuessWord("");
-    //                     setGuessIndex(prevState => prevState + 1);
-    //                     setCursorIndex(0);
-    //                     handlePopup("Try again!");
-    //                     dispatchCurrentGameState({
-    //                         type: "set",
-    //                         state: GameStates.Guessing
-    //                     });
-    //                 }
-    //             }
-    //         });
-    //         const classes = isFirstRender ? Array.from({ length: guessIndex * 5 }, (_, i) => ".guess-letter-key-" + i) : Array.from({ length: 5 }, (_, i) => ".guess-letter-key-" + (guessIndex * 5 + i));
-    //
-    //         console.log(classes);
-    //
-    //         tl.to(classes, {
-    //             rotateY: "360deg",
-    //             backgroundColor: (i, element) => {
-    //                 const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-    //                 if (!letterKeyInfo.foundKey) {
-    //                     console.error("No letter key found!");
-    //                     return;
-    //                 }
-    //                 console.log(letterKeyInfo);
-    //                 const letterState = guessedLetterStates[letterKeyInfo.key].state;
-    //                 if (letterState === LetterStates.Correct) return "#6aaa64";
-    //                 if (letterState === LetterStates.Present) return "#c9b458";
-    //                 if (letterState === LetterStates.Absent) return "#787c7e";
-    //             },
-    //             color: "#ffffff",
-    //             borderColor: (i, element) => {
-    //                 const letterKeyInfo = getKeyByClass(element, "guess-letter-key-", classes);
-    //                 if (!letterKeyInfo.foundKey) {
-    //                     console.error("No letter key found!");
-    //                     return;
-    //                 }
-    //                 const letterState = guessedLetterStates[letterKeyInfo.key].state;
-    //                 if (letterState === LetterStates.Correct) return "#6aaa64";
-    //                 if (letterState === LetterStates.Present) return "#c9b458";
-    //                 if (letterState === LetterStates.Absent)  return "#787c7e";
-    //             },
-    //             ease: "power3.inOut",
-    //             duration: 0.5,
-    //             stagger: 0.2,
-    //         })
-    //     }
-    // }, {dependencies: [isInitializingGame, currentGameState, guessedLetterStates, guessIndex, dispatchLettersAvailabilityMap]});
-
+    }, {dependencies: [updatedLettersBuffer, isInitializingGame, isFirstRender, guessedLetterStates], scope: guessLettersContainer})
     return (
         <>
             <div className="w-full h-full flex flex-col justify-center items-center">
-                <div className="relative max-w-full min-h-4/5 max-h-full bg-background flex flex-col gap-4 justify-evenly items-center overflow-y-auto">
+                <div className="relative w-full min-h-4/5 max-h-full bg-background flex flex-col gap-4 justify-evenly items-center overflow-hidden">
                     <h1>Wordle</h1>
-                    <div className="grow flex flex-col place-content-center justify-evenly gap-2">
-                        <div className="w-fit h-fit grid grid-cols-5 mx-auto gap-2 place-content-center place-items-stretch font-roboto-mono">
+                    <div className="grow m-4 self-stretch flex flex-col flex-wrap items-center justify-evenly gap-2 overflow-auto">
+                        <div ref={guessLettersContainer} className="w-fit h-fit grid grid-cols-5 mx-auto my-2 gap-2 place-content-center place-items-stretch font-roboto-mono">
                             {guessedLetterStates && guessedLetterStates.map((item, index) => {
                                 return (
                                     <div key={index} className={`guess-letter-key-${index} ` + "transition-all box-content aspect-square size-text-sm text-sm/0 sm:size-text-base sm:text-base/0 md:size-text-lg md:text-lg/0 lg:size-text-xl lg:text-xl/0 xl:size-text-2xl xl:text-2xl font-bold p-2 border-2 border-solid border-darker-shadow bg-bright-shadow flex items-center justify-center"}>
@@ -656,10 +581,10 @@ export default function GameMain() {
                             })
                             }
                         </div>
-                        <div className="hidden sm:block"><Keyboard/></div>
+                        <div className="mx-auto block"><Keyboard/></div>
                     </div>
                     <Show when={showPopup}>
-                        <div className="absolute left-1/2 top-1/6 px-2 py-1 -translate-1/2 rounded-sm bg-foreground text-background opacity-80 text-sm animate-bounce">
+                        <div className="absolute left-1/2 top-1/6 p-2 text-sm xl:text-base -translate-1/2 rounded-sm bg-foreground text-background opacity-80 animate-bounce">
                             {popupContent}
                         </div>
                     </Show>
@@ -693,17 +618,43 @@ export default function GameMain() {
                         </div>
                     </div>
                     <div className="mt-4 flex flex-col sm:flex-row items-stretch justify-center sm:items-center sm:justify-stretch text-center gap-2">
-                        <Link className="rounded-2xl border border-solid border-transparent transition-colors bg-foreground text-background hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm/0 sm:text-base/0 p-5"
+                        <Link className="rounded-2xl border border-solid border-transparent transition-colors bg-foreground text-background hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base px-4 py-2"
                               href="/game-start">
                             Try Another One?
                         </Link>
-                        <Link className="rounded-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm/0 sm:text-base/0 p-5"
+                        <Link className="rounded-2xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base px-4 py-2"
                               href="/">
                             Close?
                         </Link>
                     </div>
                 </div>
             </div>
+            <Show when={ifGameError}>
+                <div className="absolute inset-4 sm:inset-10 p-2 flex justify-center items-center">
+                    <div className="flex flex-col justify-evenly items-center gap-4 bg-background shadow-around p-2 sm:py-4 sm:px-6 rounded overflow-auto">
+                        <div className="text-2xl sm:text-3xl xl:text-4xl font-bold">Error</div>
+                        <div className="flex flex-col justify-evenly text-base sm:text-lg">
+                            {errors && errors.map((item, index) => {
+                                return (
+                                    <div key={`errors-${index}`} className="text-center flex flex-col gap-2 items-center">
+                                        {item}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="mt-2 flex flex-col sm:flex-row items-stretch justify-center sm:items-center sm:justify-stretch text-center gap-2">
+                            <Link className="rounded-xl border border-solid border-transparent transition-colors bg-foreground text-background hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base px-4 py-2"
+                                  href="/game-start">
+                                Back to generate an another one?
+                            </Link>
+                            <Link className="rounded-xl border border-solid border-black/[.08] dark:border-white/[.145] transition-colors hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base px-4 py-2"
+                                  href="/">
+                                Close?
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </Show>
         </>
     )
 }

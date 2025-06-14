@@ -1,7 +1,7 @@
 'use client';
 
-import {createContext, useCallback, useContext, useEffect, useReducer, useRef, useState} from "react";
-import {fetchARandomWord as fetchARandomWordFromSever, checkIfAWordValid as checkIfAWordValidFromServer} from "@/utils/handleWordList";
+import {createContext, useContext, useEffect, useReducer, useRef, useState} from "react";
+import {fetchARandomWord as fetchARandomWordFromWordList, checkIfAWordValid as checkIfAWordValidFromWordList} from "@/utils/handleWordList";
 import {HandleCacheContext} from "@/context/CacheContext";
 
 const GameStates = Object.freeze({
@@ -33,7 +33,7 @@ export const WordleLettersAvailabilityBufferContext = createContext(null);
 export const WordleLettersAvailabilityMapContext = createContext(null);
 
 export default function WordleContextProvider({children}) {
-    const [ifCacheStoreAvailable, handleDataInCache] = useContext(HandleCacheContext);
+    const handleDataInCache = useContext(HandleCacheContext);
     const [isFirstRender, setIsFirstRender] = useState(true);
 
     const [wordleWord, setWordleWord] = useState("");
@@ -105,21 +105,160 @@ export default function WordleContextProvider({children}) {
     const [updatedLettersBuffer, dispatchUpdatedLettersBuffer] = useReducer((updatedLettersBuffer, action) => {
         switch (action.type) {
             case "clear": {
+                console.log("clearing updatedLettersBuffer");
                 return new Map();
             }
-            case "set": {
-                const newUpdatedLettersBuffer = new Map(updatedLettersBuffer);
+            case "setLetter": {
+                if (action.key === null || action.key === undefined || action.letter === null || action.letter === undefined) {
+                    console.error("Invalid setLetter");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 if (newUpdatedLettersBuffer.has(action.key)) {
-                    if (action.actions) {
-                        newUpdatedLettersBuffer.set(action.key, {letter: action.letter, actions: [...newUpdatedLettersBuffer.get(action.key).actions, ...action.actions], state: (action.state ? action.state : LetterStates.Initial)});
-                    } else {
-                        newUpdatedLettersBuffer.set(action.key, {letter: action.letter, actions: [...newUpdatedLettersBuffer.get(action.key).actions, action.action], state: (action.state ? action.state : LetterStates.Initial)});
-                    }
+                    const value = newUpdatedLettersBuffer.get(action.key);
+                    value.letter = action.letter;
+                    value.actions.push("setLetter");
+                    // newUpdatedLettersBuffer.set(action.key, value);
                 } else {
-                    if (action.actions) {
-                        newUpdatedLettersBuffer.set(action.key, {letter: action.letter, actions: [...action.actions], state: (action.state ? action.state : LetterStates.Initial)});
+                    const value = {
+                        letter: action.letter,
+                        actions: ["setLetter"],
+                    }
+                    newUpdatedLettersBuffer.set(action.key, value);
+                }
+                return newUpdatedLettersBuffer;
+            }
+            case "setState": {
+                if (action.key === null || action.key === undefined || action.state === null || action.state === undefined) {
+                    console.error("Invalid setState");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
+                if (action.state !== LetterStates.Initial) {
+                    if (newUpdatedLettersBuffer.has(action.key)) {
+                        const value = newUpdatedLettersBuffer.get(action.key);
+                        value.state = action.state;
+                        value.actions.push("setState");
+                        // newUpdatedLettersBuffer.set(action.key, value);
                     } else {
-                        newUpdatedLettersBuffer.set(action.key, {letter: action.letter, actions: [action.action], state: (action.state ? action.state : LetterStates.Initial)});
+                        const value = {
+                            state: action.state,
+                            actions: ["setState"],
+                        }
+                        newUpdatedLettersBuffer.set(action.key, value);
+                    }
+                }
+                return newUpdatedLettersBuffer;
+            }
+            case "setStates": {
+                if (!action.keys || !action.states || action.keys.length !== action.states.length) {
+                    console.error("Invalid setStates");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
+                for (let index = 0; index < action.keys.length; index ++) {
+                    if (action.states[index] !== LetterStates.Initial) {
+                        if (newUpdatedLettersBuffer.has(action.keys[index])) {
+                            const value = newUpdatedLettersBuffer.get(action.keys[index]);
+                            value.state = action.states[index];
+                            value.actions.push("setState");
+                            // newUpdatedLettersBuffer.set(action.keys[index], value);
+                        } else {
+                            const value = {
+                                state: action.states[index],
+                                actions: ["setState"],
+                            }
+                            newUpdatedLettersBuffer.set(action.keys[index], value);
+                        }
+                    }
+                }
+                return newUpdatedLettersBuffer;
+            }
+            case "setLetterAndState": {
+                if (action.key === null || action.key === undefined || action.letter === null || action.letter === undefined || action.state === null || action.state === undefined) {
+                    console.error("Invalid setLetterAndState");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
+                if (newUpdatedLettersBuffer.has(action.key)) {
+                    const value = newUpdatedLettersBuffer.get(action.key);
+                    value.letter = action.letter;
+                    value.state = action.state;
+                    value.actions.push("setLetter");
+                    if (action.state !== LetterStates.Initial) {
+                        value.actions.push("setState");
+                    }
+                    // newUpdatedLettersBuffer.set(action.key, value);
+                } else {
+                    const value = {
+                        letter: action.letter,
+                        state: action.state,
+                        actions: action.state === LetterStates.Initial ? ["setLetter"] : ["setLetter", "setState"],
+                    }
+                    newUpdatedLettersBuffer.set(action.key, value);
+                }
+                return newUpdatedLettersBuffer;
+            }
+            case "setLettersAndStates": {
+                if (!action.keys || !action.letters || !action.states || action.keys.length !== action.states.length || action.keys.length !== action.letters.length) {
+                    console.error("Invalid setLettersAndStates");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
+                for (let index = 0; index < action.keys.length; index ++) {
+                    if (newUpdatedLettersBuffer.has(action.keys[index])) {
+                        const value = newUpdatedLettersBuffer.get(action.keys[index]);
+                        value.letter = action.letters[index];
+                        value.state = action.states[index];
+                        value.actions.push("setLetter");
+                        if (action.states[index] !== LetterStates.Initial) {
+                            value.actions.push("setState");
+                        }
+                        // newUpdatedLettersBuffer.set(action.keys[index], value);
+                    } else {
+                        const value = {
+                            letter: action.letters[index],
+                            state: action.states[index],
+                            actions: action.states[index] === LetterStates.Initial ? ["setLetter"] : ["setLetter", "setState"],
+                            // actions: action.states[index] === LetterStates.Initial ? [] : ["setState"],
+                        }
+                        newUpdatedLettersBuffer.set(action.keys[index], value);
+                    }
+                }
+                return newUpdatedLettersBuffer;
+            }
+            case "setRemove": {
+                if (action.key === null || action.key === undefined) {
+                    console.error("Invalid setRemove");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
+                if (newUpdatedLettersBuffer.has(action.key)) {
+                    const value = newUpdatedLettersBuffer.get(action.key);
+                    value.actions.push("remove");
+                    // newUpdatedLettersBuffer.set(action.key, value);
+                } else {
+                    const value = {
+                        actions: ["remove"],
+                    }
+                    newUpdatedLettersBuffer.set(action.key, value);
+                }
+                return newUpdatedLettersBuffer;
+            }
+
+            case "clearActions": {
+                if (action.actions === null || action.actions === undefined || !Array.isArray(action.actions)) {
+                    console.error("Invalid setRemoveAllKeysActions");
+                    return;
+                }
+                const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
+                for (let key of newUpdatedLettersBuffer.keys()) {
+                    if (newUpdatedLettersBuffer.has(key)) {
+                        const value = newUpdatedLettersBuffer.get(key);
+                        value.actions = value.actions.filter(item => !action.actions.includes(item));
+                        if (value.actions.length === 0) {
+                            newUpdatedLettersBuffer.delete(key);
+                        }
                     }
                 }
                 return newUpdatedLettersBuffer;
@@ -145,26 +284,26 @@ export default function WordleContextProvider({children}) {
             }
             case "initSet": {
                 setIsInitializingGuessedLetterStates(true);
+                const keys = [];
+                const letters = [];
+                const states = [];
                 for (let index = 0; index < action.initGuessedLetterStates.length; index ++) {
                     if (action.initGuessedLetterStates[index].letter) {
+                        keys.push(index);
+                        letters.push(action.initGuessedLetterStates[index].letter);
                         if (action.initGuessedLetterStates[index].state) {
-                            dispatchUpdatedLettersBuffer({
-                                type: "set",
-                                key: index,
-                                letter: action.initGuessedLetterStates[index].letter,
-                                state: action.initGuessedLetterStates[index].state,
-                                actions: ["setLetter", "setState"]
-                            });
+                            states.push(action.initGuessedLetterStates[index].state)
                         } else {
-                            dispatchUpdatedLettersBuffer({
-                                type: "set",
-                                key: index,
-                                letter: action.initGuessedLetterStates[index].letter,
-                                action: "setLetter"
-                            });
+                            states.push(LetterStates.Initial);
                         }
                     }
                 }
+                dispatchUpdatedLettersBuffer({
+                    type: "setLettersAndStates",
+                    keys: keys,
+                    letters: letters,
+                    states: states,
+                });
                 return action.initGuessedLetterStates;
             }
             case "remove": {
@@ -172,10 +311,8 @@ export default function WordleContextProvider({children}) {
                 if (action.index >= 0 && action.index < newGuessedLetterStates.length) {
                     newGuessedLetterStates[action.index] = {letter: "", state: LetterStates.Initial};
                     dispatchUpdatedLettersBuffer({
-                        type: "set",
+                        type: "setRemove",
                         key: action.index,
-                        letter: guessedLetterStates[action.index].letter,
-                        action: "remove"
                     })
                 }
                 return newGuessedLetterStates;
@@ -185,10 +322,9 @@ export default function WordleContextProvider({children}) {
                 if (action.index >= 0 && action.index < newGuessedLetterStates.length) {
                     newGuessedLetterStates[action.index].letter = action.letter;
                     dispatchUpdatedLettersBuffer({
-                        type: "set",
+                        type: "setLetter",
                         key: action.index,
                         letter: action.letter,
-                        action: "setLetter"
                     })
                 }
                 return newGuessedLetterStates;
@@ -198,11 +334,9 @@ export default function WordleContextProvider({children}) {
                 if (action.index >= 0 && action.index < newGuessedLetterStates.length) {
                     newGuessedLetterStates[action.index].state = action.state;
                     dispatchUpdatedLettersBuffer({
-                        type: "set",
+                        type: "setState",
                         key: action.index,
-                        letter: action.initGuessedLetterStates[action.index].letter,
                         state: action.state,
-                        action: "setState"
                     });
                 }
                 return guessedLetterStates;
@@ -211,14 +345,14 @@ export default function WordleContextProvider({children}) {
                 const newGuessedLetterStates = [...guessedLetterStates];
                 for (let i = 0; i < action.states.length && i + action.startIndex < newGuessedLetterStates.length; i++) {
                     newGuessedLetterStates[i + action.startIndex].state = action.states[i];
-                    dispatchUpdatedLettersBuffer({
-                        type: "set",
-                        key: i + action.startIndex,
-                        letter: newGuessedLetterStates[i + action.startIndex].letter,
-                        state: action.states[i],
-                        action: "setState"
-                    });
                 }
+                dispatchUpdatedLettersBuffer({
+                    type: "setStates",
+                    keys: Array.from({length: action.states.length}, (_, index) => {
+                        return index + action.startIndex;
+                    }),
+                    states: action.states,
+                })
                 return newGuessedLetterStates;
             }
         }
@@ -227,119 +361,93 @@ export default function WordleContextProvider({children}) {
     const [cursorIndex, setCursorIndex] = useState(0); // index of the current cursor position in the current guess - based on guessedLetterStates and guessIndex
 
     useEffect(() => {
-        async function syncStates () {
-            if (handleDataInCache) {
-                console.log("Syncing states from cache...");
-                const wordleWordInCache = await handleDataInCache({
-                    type: "get",
-                    key: "wordleWord"
-                });
-                if (wordleWordInCache) {
-                    setWordleWord(wordleWordInCache);
-                }
-                const currentGameStateInCache = await handleDataInCache({
-                    type: "get",
-                    key: "currentGameState"
-                });
-                if (currentGameStateInCache) {
-                    dispatchCurrentGameState({
-                        type: "set",
-                        state: currentGameStateInCache
-                    });
-                }
-                const guessedLetterStatesInCache = await handleDataInCache({
-                    type: "get",
-                    key: "guessedLetterStates"
-                });
-                if (guessedLetterStatesInCache) {
-                    dispatchGuessedLetterStates({
-                        type: "initSet",
-                        initGuessedLetterStates: guessedLetterStatesInCache
-                    });
-                }
-                const guessIndexInCache = await handleDataInCache({
-                    type: "get",
-                    key: "guessIndex"
-                });
-                if (guessIndexInCache) {
-                    setGuessIndex(guessIndexInCache);
-                }
+        if (isFirstRender && handleDataInCache) {
+            console.log("Syncing states from cache...");
+            const wordleWordInCache = handleDataInCache({
+                type: "get",
+                key: "wordleWord"
+            });
+            if (wordleWordInCache !== null && wordleWordInCache !== undefined && wordleWordInCache !== "") {
+                setWordleWord(wordleWordInCache);
             }
+            const currentGameStateInCache = handleDataInCache({
+                type: "get",
+                key: "currentGameState"
+            });
+            if (currentGameStateInCache !== null && currentGameStateInCache !== undefined) {
+                dispatchCurrentGameState({
+                    type: "set",
+                    state: currentGameStateInCache
+                });
+            }
+            const guessedLetterStatesInCache = handleDataInCache({
+                type: "get",
+                key: "guessedLetterStates"
+            });
+            if (guessedLetterStatesInCache !== null && guessedLetterStatesInCache !== undefined) {
+                dispatchGuessedLetterStates({
+                    type: "initSet",
+                    initGuessedLetterStates: guessedLetterStatesInCache
+                });
+            }
+            const guessIndexInCache = handleDataInCache({
+                type: "get",
+                key: "guessIndex"
+            });
+            if (guessIndexInCache !== null && guessIndexInCache !== undefined) {
+                setGuessIndex(guessIndexInCache);
+            }
+            setIsFirstRender(false);
         }
-        if (ifCacheStoreAvailable && isFirstRender) {
-            syncStates().then(() => {
-                setIsFirstRender(false);
-            }).catch();
-        }
-    }, [ifCacheStoreAvailable, handleDataInCache, isFirstRender]); // run when store is loaded
+    }, [handleDataInCache, isFirstRender]); // run when store is loaded
 
     // sync wordleWord to cache when it changes
-    const syncWordleWordToCache = useCallback(async () => {
-        if (handleDataInCache) {
+    useEffect(() => {
+        if (!isFirstRender && handleDataInCache) {
             console.log("syncing wordleWord to cache: ", wordleWord);
-            await handleDataInCache({
+            handleDataInCache({
                 type: "set",
                 key: "wordleWord",
                 value: wordleWord
             });
         }
-    }, [handleDataInCache, wordleWord]);
-    useEffect(() => {
-        if (ifCacheStoreAvailable && !isFirstRender) {
-            syncWordleWordToCache().then().catch();
-        }
-    }, [ifCacheStoreAvailable, isFirstRender, syncWordleWordToCache]);
+    }, [isFirstRender, handleDataInCache, wordleWord]);
 
     // sync currentGameState to cache when it changes
-    const syncCurrentGameStateToCache = useCallback(async () => {
-        if (handleDataInCache) {
+    useEffect(() => {
+        if (!isFirstRender && handleDataInCache) {
             console.log("syncing currentGameState to cache: ", currentGameState);
-            await handleDataInCache({
+            handleDataInCache({
                 type: "set",
                 key: "currentGameState",
                 value: currentGameState
             });
         }
-    }, [handleDataInCache, currentGameState]);
-    useEffect(() => {
-        if (ifCacheStoreAvailable && !isFirstRender) {
-            syncCurrentGameStateToCache().then().catch();
-        }
-    }, [ifCacheStoreAvailable, isFirstRender, syncCurrentGameStateToCache]);
+    }, [isFirstRender, handleDataInCache, currentGameState]);
 
     // sync guessedLetterStates to cache when it changes
-    const syncGuessedLetterStatesToCache = useCallback(async () => {
-        if (handleDataInCache) {
+    useEffect(() => {
+        if (!isFirstRender && handleDataInCache) {
             console.log("syncing guessedLetterStates to cache: ", guessedLetterStates);
-            await handleDataInCache({
+            handleDataInCache({
                 type: "set",
                 key: "guessedLetterStates",
                 value: guessedLetterStates
             });
         }
-    }, [handleDataInCache, guessedLetterStates]);
-    useEffect(() => {
-        if (ifCacheStoreAvailable && !isFirstRender) {
-            syncGuessedLetterStatesToCache().then().catch();
-        }
-    }, [ifCacheStoreAvailable, isFirstRender, syncGuessedLetterStatesToCache]);
+    }, [isFirstRender, handleDataInCache, guessedLetterStates]);
 
     // sync guessIndex to cache when it changes
-    const syncGuessIndexToCache = useCallback(async () => {
-        if (handleDataInCache) {
+    useEffect(() => {
+        if (!isFirstRender && handleDataInCache) {
             console.log("syncing guessIndex to cache: ", guessIndex);
-            await handleDataInCache({
+            handleDataInCache({
                 type: "set",
                 key: "guessIndex",
                 value: guessIndex
             });
         }
-    }, [handleDataInCache, guessIndex]);
-    useEffect(() => {
-        if (ifCacheStoreAvailable && !isFirstRender) {
-            syncGuessIndexToCache().then().catch();
-        }
-    }, [ifCacheStoreAvailable, isFirstRender, syncGuessIndexToCache]);
+    }, [isFirstRender, handleDataInCache, guessIndex]);
 
     useEffect(() => {
         const newWordleWordLettersCountMap = new Map();
@@ -401,18 +509,8 @@ export default function WordleContextProvider({children}) {
         previousGameStateRef.current = currentGameState; // update previous game state
     }, [isFirstRender, currentGameState]); // reset guessedLetterStates, wordleWord, and guessIndex when game state is reset to Initial
 
-    // useEffect(() => {
-    //     if (previousGameStateRef.current !== currentGameState && currentGameState === GameStates.Initial && handleDataInCache) {
-    //         console.log("Game state is reset to Initial, clearing cache...");
-    //         handleDataInCache({
-    //             type: "clear"
-    //         }).then().catch();
-    //     }
-    //     previousGameStateRef.current = currentGameState; // update previous game state
-    // }, [currentGameState, handleDataInCache]); // clear cache when game state is reset to Initial
-
     async function searchAWordInDictionary(word) {
-        const [ok, body] = await checkIfAWordValidFromServer(word); // server-side function
+        const [ok, body] = await checkIfAWordValidFromWordList(word); // server-side function
         if (ok) {
             // body = (if the word is included)
             return body;
@@ -423,7 +521,7 @@ export default function WordleContextProvider({children}) {
     }
 
     async function fetchWordleWord() {
-        const [ok, body] = await fetchARandomWordFromSever(); // server-side function
+        const [ok, body] = await fetchARandomWordFromWordList(); // server-side function
         if (ok) {
             // newWordleWord = body
             return body;

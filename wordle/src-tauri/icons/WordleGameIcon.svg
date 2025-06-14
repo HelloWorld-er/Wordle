@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer1">
+    <rect
+       style="display:inline;fill:#ffffff;fill-opacity:1;stroke:#99a1af;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="rect1"
+       width="22.200001"
+       height="22.200001"
+       x="4.8999996"
+       y="4.8999996"
+       rx="3.7"
+       ry="3.7" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:13.3333px;line-height:0;font-family:'DIN Alternate';-inkscape-font-specification:'DIN Alternate Bold';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;display:inline;fill:#1a1a1a;fill-opacity:0.546939;stroke:#000000;stroke-width:0;stroke-linecap:round"
+       x="10.453125"
+       y="20.746082"
+       id="text1"><tspan
+         id="tspan1"
+         x="10.453125"
+         y="20.746082"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:0;font-family:'DIN Alternate';-inkscape-font-specification:'DIN Alternate Bold';fill:#1a1a1a">W</tspan></text>
+  </g>
+</svg>
