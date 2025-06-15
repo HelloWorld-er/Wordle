@@ -1,0 +1,39 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "wordle",
+  "version": "0.1.0",
+  "identifier": "com.wordle.app",
+  "build": {
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "wordle",
+        "minWidth": 300,
+        "minHeight": 540,
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/WordleGameIcon.icns",
+      "icons/WordleGameIcon16x16.ico",
+      "icons/WordleGameIcon32x32.png",
+      "icons/WordleGameIcon128x128.png",
+      "icons/WordleGameIcon256x256.png"
+    ]
+  }
+}

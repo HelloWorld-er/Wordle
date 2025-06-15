@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --custom-background: #ffffff;
+  --custom-foreground: #171717;
+  --custom-bright-shadow: oklch(98.5% 0 0);
+  --custom-dark-shadow: oklch(92.8% 0.006 264.531);
+  --custom-darker-shadow: oklch(87.2% 0.01 258.338);
+  --custom-darkest-shadow: oklch(70.7% 0.022 261.325);
+  --custom-wordle-correct: #6aaa64;
+  --custom-wordle-present: #c9b458;
+  --custom-wordle-absent: #787c7e;
+}
+
+@theme {
+  --color-background: var(--custom-background);
+  --color-foreground: var(--custom-foreground);
+  --color-bright-shadow: var(--custom-bright-shadow);
+  --color-dark-shadow: var(--custom-dark-shadow);
+  --color-darker-shadow: var(--custom-darker-shadow);
+  --color-darkest-shadow: var(--custom-darkest-shadow);
+  --color-wordle-correct: var(--custom-wordle-correct);
+  --color-wordle-present: var(--custom-wordle-present);
+  --color-wordle-absent: var(--custom-wordle-absent);
+
+
+  --font-roboto: var(--font-roboto);
+  --font-roboto-mono: var(--font-roboto-mono);
+
+  --shadow-around: 0 0 7px #9ca3af;
+
+  --spacing-text-sm: var(--text-sm);
+  --spacing-text-base: var(--text-base);
+  --spacing-text-lg: var(--text-lg);
+  --spacing-text-xl: var(--text-xl);
+  --spacing-text-2xl: var(--text-2xl);
+  --spacing-text-3xl: var(--text-3xl);
+  --spacing-text-4xl: var(--text-4xl);
+  --spacing-text-5xl: var(--text-5xl);
+  --spacing-text-6xl: var(--text-6xl);
+  --spacing-text-7xl: var(--text-7xl);
+  --spacing-text-8xl: var(--text-8xl);
+  --spacing-text-9xl: var(--text-9xl);
+}
+
+h1 {
+  @apply text-3xl sm:text-4xl xl:text-5xl font-bold;
+}
+
+h2 {
+  @apply text-lg sm:text-xl font-bold;
+}
+
+button, a {
+  @apply cursor-pointer;
+}
+
+::-webkit-scrollbar {
+  display:none
+}
