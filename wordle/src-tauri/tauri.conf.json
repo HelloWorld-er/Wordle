@@ -13,6 +13,8 @@
     "windows": [
       {
         "title": "wordle",
+        "minWidth": 300,
+        "minHeight": 540,
         "width": 800,
         "height": 600,
         "resizable": true,

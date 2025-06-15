@@ -18,7 +18,6 @@ export default function GameStart() {
     useEffect(() => {
         if (!isFirstRender && !ifReset.current) {
             if (currentGameState !== GameStates.Initial && currentGameState !== GameStates.Generated) {
-                console.log("Game state changed to reset");
                 dispatchCurrentGameState({
                     type: "reset",
                 });

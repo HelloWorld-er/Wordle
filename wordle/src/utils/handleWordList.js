@@ -7,7 +7,6 @@ async function fetchWordListOnce() {
             throw new Error("Failed to fetch word list");
         }
         wordList = await wordListResponse.json();
-        console.log("Word List Loaded:", wordList);
     }
 }
 

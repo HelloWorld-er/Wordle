@@ -105,20 +105,17 @@ export default function WordleContextProvider({children}) {
     const [updatedLettersBuffer, dispatchUpdatedLettersBuffer] = useReducer((updatedLettersBuffer, action) => {
         switch (action.type) {
             case "clear": {
-                console.log("clearing updatedLettersBuffer");
                 return new Map();
             }
             case "setLetter": {
                 if (action.key === null || action.key === undefined || action.letter === null || action.letter === undefined) {
-                    console.error("Invalid setLetter");
-                    return;
+                    throw new Error("Invalid setLetter action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 if (newUpdatedLettersBuffer.has(action.key)) {
                     const value = newUpdatedLettersBuffer.get(action.key);
                     value.letter = action.letter;
                     value.actions.push("setLetter");
-                    // newUpdatedLettersBuffer.set(action.key, value);
                 } else {
                     const value = {
                         letter: action.letter,
@@ -130,8 +127,7 @@ export default function WordleContextProvider({children}) {
             }
             case "setState": {
                 if (action.key === null || action.key === undefined || action.state === null || action.state === undefined) {
-                    console.error("Invalid setState");
-                    return;
+                    throw new Error("Invalid setState action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 if (action.state !== LetterStates.Initial) {
@@ -152,8 +148,7 @@ export default function WordleContextProvider({children}) {
             }
             case "setStates": {
                 if (!action.keys || !action.states || action.keys.length !== action.states.length) {
-                    console.error("Invalid setStates");
-                    return;
+                    throw new Error("Invalid setStates action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 for (let index = 0; index < action.keys.length; index ++) {
@@ -176,8 +171,7 @@ export default function WordleContextProvider({children}) {
             }
             case "setLetterAndState": {
                 if (action.key === null || action.key === undefined || action.letter === null || action.letter === undefined || action.state === null || action.state === undefined) {
-                    console.error("Invalid setLetterAndState");
-                    return;
+                    throw new Error("Invalid setLetterAndState action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 if (newUpdatedLettersBuffer.has(action.key)) {
@@ -201,8 +195,7 @@ export default function WordleContextProvider({children}) {
             }
             case "setLettersAndStates": {
                 if (!action.keys || !action.letters || !action.states || action.keys.length !== action.states.length || action.keys.length !== action.letters.length) {
-                    console.error("Invalid setLettersAndStates");
-                    return;
+                    throw new Error("Invalid setLettersAndStates action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 for (let index = 0; index < action.keys.length; index ++) {
@@ -229,8 +222,7 @@ export default function WordleContextProvider({children}) {
             }
             case "setRemove": {
                 if (action.key === null || action.key === undefined) {
-                    console.error("Invalid setRemove");
-                    return;
+                    throw new Error("Invalid setRemove action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 if (newUpdatedLettersBuffer.has(action.key)) {
@@ -248,8 +240,7 @@ export default function WordleContextProvider({children}) {
 
             case "clearActions": {
                 if (action.actions === null || action.actions === undefined || !Array.isArray(action.actions)) {
-                    console.error("Invalid setRemoveAllKeysActions");
-                    return;
+                    throw new Error("Invalid clearActions action");
                 }
                 const newUpdatedLettersBuffer = structuredClone(updatedLettersBuffer);
                 for (let key of newUpdatedLettersBuffer.keys()) {
@@ -362,7 +353,6 @@ export default function WordleContextProvider({children}) {
 
     useEffect(() => {
         if (isFirstRender && handleDataInCache) {
-            console.log("Syncing states from cache...");
             const wordleWordInCache = handleDataInCache({
                 type: "get",
                 key: "wordleWord"
@@ -404,7 +394,6 @@ export default function WordleContextProvider({children}) {
     // sync wordleWord to cache when it changes
     useEffect(() => {
         if (!isFirstRender && handleDataInCache) {
-            console.log("syncing wordleWord to cache: ", wordleWord);
             handleDataInCache({
                 type: "set",
                 key: "wordleWord",
@@ -416,7 +405,6 @@ export default function WordleContextProvider({children}) {
     // sync currentGameState to cache when it changes
     useEffect(() => {
         if (!isFirstRender && handleDataInCache) {
-            console.log("syncing currentGameState to cache: ", currentGameState);
             handleDataInCache({
                 type: "set",
                 key: "currentGameState",
@@ -428,7 +416,6 @@ export default function WordleContextProvider({children}) {
     // sync guessedLetterStates to cache when it changes
     useEffect(() => {
         if (!isFirstRender && handleDataInCache) {
-            console.log("syncing guessedLetterStates to cache: ", guessedLetterStates);
             handleDataInCache({
                 type: "set",
                 key: "guessedLetterStates",
@@ -440,7 +427,6 @@ export default function WordleContextProvider({children}) {
     // sync guessIndex to cache when it changes
     useEffect(() => {
         if (!isFirstRender && handleDataInCache) {
-            console.log("syncing guessIndex to cache: ", guessIndex);
             handleDataInCache({
                 type: "set",
                 key: "guessIndex",
@@ -464,7 +450,6 @@ export default function WordleContextProvider({children}) {
     useEffect(() => {
         if (!isFirstRender && isInitializingGuessedLetterStates) {
             setIsInitializingGuessedLetterStates(false);
-            console.log("Initializing lettersAvailabilityMap based on guessedLetterStates...");
             const newLettersAvailabilityMap = new Map(Array.from({ length: 26 }, (_, i) => [String.fromCharCode(65 + i), LetterStates.Initial]));
             for (let {letter, state} of guessedLetterStates) {
                 if (newLettersAvailabilityMap.has(letter) && newLettersAvailabilityMap.get(letter) < state) {
@@ -482,7 +467,6 @@ export default function WordleContextProvider({children}) {
     useEffect(() => {
         if (!isFirstRender && isInitializingGuessedLetterStates) {
             setIsInitializingGuessedLetterStates(false);
-            console.log("Updating guessIndex and cursorIndex based on guessedLetterStates...");
             let newCursorIndex = 0;
             for (let index = guessIndex * 5; index < guessIndex * 5 + 5 && index < guessedLetterStates.length; index ++) {
                 if (guessedLetterStates[index].letter) {
@@ -491,15 +475,12 @@ export default function WordleContextProvider({children}) {
                     break;
                 }
             }
-            console.log("guessIndex: ", guessIndex);
-            console.log("cursorIndex: ", newCursorIndex);
             setCursorIndex(newCursorIndex);
         }
     }, [isFirstRender, isInitializingGuessedLetterStates, guessedLetterStates, guessIndex]); // update cursorIndex based on guessedLetterStates when it is initialized
 
     useEffect(() => {
         if (!isFirstRender && previousGameStateRef.current !== currentGameState && currentGameState === GameStates.Initial) {
-            console.log("Game state is reset to Initial, resetting lettersAvailabilityMap and wordleWord...");
             setWordleWord("");
             dispatchGuessedLetterStates({
                 type: "clear",
@@ -515,30 +496,24 @@ export default function WordleContextProvider({children}) {
             // body = (if the word is included)
             return body;
         } else {
-            console.error("fail to fetch word from dictionary: ", body);
-            return null;
+            throw new Error("Failed to fetch word from dictionary");
         }
     }
 
     async function fetchWordleWord() {
         const [ok, body] = await fetchARandomWordFromWordList(); // server-side function
         if (ok) {
-            // newWordleWord = body
             return body;
         } else {
-            console.error("fail to fetch a word from wordList: ", body);
-            return "";
+            throw new Error("Failed to fetch a word from word list");
         }
     }
 
     async function generateAWord() {
-        while (true) {
-            try {
-                setWordleWord(await fetchWordleWord());
-                break;
-            } catch (error) {
-                console.error("Error generating a word:", error);
-            }
+        try {
+            setWordleWord(await fetchWordleWord());
+        } catch (error) {
+            throw new Error("Failed to generate a word. Please try again later.");
         }
     }
 

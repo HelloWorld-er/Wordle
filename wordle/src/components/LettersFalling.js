@@ -28,7 +28,6 @@ export default function LettersFalling({className, style, positionClass = "relat
 
     useEffect(() => {
         if (!isItemsCreated) {
-            console.log("generate new letters");
             generateNewLetters(numberOfAnimateItem);
             setIsItemsCreated(true);
         }
@@ -36,7 +35,6 @@ export default function LettersFalling({className, style, positionClass = "relat
 
     useGSAP(() => {
         if (isItemsCreated) {
-            console.log("start animation");
             const tl = gsap.timeline({});
 
             tl.set(animationContainer.current.children, {

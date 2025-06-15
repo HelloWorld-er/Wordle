@@ -8,10 +8,6 @@ export const HandleCacheContext = createContext(null);
 
 export function CacheContextProvider({children}) {
     function handleDataInCache(action) {
-        console.log(action);
-        console.log("session storage: ", sessionStorage);
-        console.log("cacheStore keys: ", Object.keys(sessionStorage));
-        console.log("cacheStore values: ", Object.values(sessionStorage));
         switch (action.type) {
             case "get": {
                 return JSON.parse(sessionStorage.getItem(action.key));
