@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "wordle",
+  "productName": "Wordle",
   "version": "0.1.0",
   "identifier": "com.wordle.app",
   "build": {
