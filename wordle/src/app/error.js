@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from "next/link";
+import { openLinkInBrowser } from "@/utils/handleExternalLink";
 
 export default function Error({error, reset}) {
     useEffect(() => {
@@ -39,7 +40,7 @@ export default function Error({error, reset}) {
                             <span className="font-semibold underline underline-offset-2 decoration-2">Last Resort</span>: If all of the above do not work, please try to refresh the page or reopen the app.
                         </p>
                         <p className="mx-2 text-xs">
-                            If possible, please report the issue to the developer at <span className="font-bold text-blue-500 break-all">https://github.com/HelloWorld-er/Wordle/issues</span>
+                            If possible, please report the issue to the developer at <span className="external-link" onClick={async () => await openLinkInBrowser("https://github.com/HelloWorld-er/Wordle/issues")}>https://github.com/HelloWorld-er/Wordle/issues</span>
                         </p>
                     </div>
                 </div>

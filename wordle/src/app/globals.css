@@ -58,3 +58,8 @@ button, a {
 ::-webkit-scrollbar {
   display:none
 }
+
+.external-link {
+  @apply font-bold text-blue-500 break-all cursor-pointer;
+  @apply hover:underline hover:underline-offset-2 hover:decoration-2;
+}

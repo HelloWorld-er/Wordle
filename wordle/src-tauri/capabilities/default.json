@@ -6,6 +6,24 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "https://github.com/HelloWorld-er/Wordle"
+        },
+        {
+          "path": "https://github.com/HelloWorld-er/Wordle/issues"
+        },
+        {
+          "path": "https://github.com/HelloWorld-er/Wordle/releases"
+        },
+        {
+          "path": "https://github.com/tabatkins/wordle-list"
+        }
+      ]
+    }
   ]
 }
