@@ -9,3 +9,4 @@ Tauri + Next.js + Tailwind are used.
 - TailwindCSS: The CSS framework used for styling this app, enabling rapid and responsive design.
 - GSAP: The animation library used to create smooth and engaging animations in this app.
 - wordle-list: The word list used in this project is sourced from [tabatkins/wordle-list](https://github.com/tabatkins/wordle-list) which is licensed under the MIT License.
+  > the cloned wordle-list is inside the folder `external-resources/wordle-list`. The file inside `wordle/public/wordleList.json` is the word list modified from it.
