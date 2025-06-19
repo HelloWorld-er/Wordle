@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Wordle",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.wordle.app",
   "build": {
     "frontendDist": "../out",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "wordle",
+        "title": "Wordle",
         "minWidth": 300,
         "minHeight": 540,
         "width": 800,
